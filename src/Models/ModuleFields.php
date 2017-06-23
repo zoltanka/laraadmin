@@ -26,15 +26,15 @@ use Dwij\Laraadmin\Models\Module;
 class ModuleFields extends Model
 {
     protected $table = 'module_fields';
-    
+
     protected $fillable = [
-        "colname", "label", "module", "field_type", "unique", "defaultvalue", "minlength", "maxlength", "required", "listing_col", "popup_vals"
+        "colname", "label", "module", "field_type", "unique", "defaultvalue", "minlength", "maxlength", "required", "listing_col", "popup_vals", "filter"
     ];
-    
+
     protected $hidden = [
-    
+
     ];
-    
+
     /**
      * Create Module Field by $request
      * Method used in "Module Manager" via FieldController
@@ -46,7 +46,7 @@ class ModuleFields extends Model
     {
         $module = Module::find($request->module_id);
         $module_id = $request->module_id;
-        
+
         $field = ModuleFields::where('colname', $request->colname)->where('module', $module_id)->first();
         if(!isset($field->id)) {
             $field = new ModuleFields;
@@ -95,11 +95,11 @@ class ModuleFields extends Model
                 }
             } else {
                 $field->popup_vals = "";
-            }            
+            }
 
             // Get number of Module fields
             $modulefields = ModuleFields::where('module', $module_id)->get();
-            
+
             // Create Schema for Module Field when table is not exist
             if(!Schema::hasTable($module->name_db)) {
                 Schema::create($module->name_db, function ($table) {
@@ -134,10 +134,10 @@ class ModuleFields extends Model
         }
 
         $field->save();
-        
+
         return $field->id;
     }
-    
+
     /**
      * Update Module Field Context / Metadata
      * Method used in "Module Manager" via FieldController
@@ -148,9 +148,9 @@ class ModuleFields extends Model
     public static function updateField($id, $request)
     {
         $module_id = $request->module_id;
-        
+
         $field = ModuleFields::find($id);
-        
+
         // Update the Schema
         // Change Column Name if Different
         $module = Module::find($module_id);
@@ -159,9 +159,9 @@ class ModuleFields extends Model
                 $table->renameColumn($field->colname, $request->colname);
             });
         }
-        
+
         $isFieldTypeChange = false;
-        
+
         // Update Context in ModuleFields
         $field->colname = $request->colname;
         $field->label = $request->label;
@@ -202,7 +202,7 @@ class ModuleFields extends Model
         } else {
             $field->listing_col = false;
         }
-        
+
         if($request->field_type == 7 || $request->field_type == 15 || $request->field_type == 18 || $request->field_type == 20) {
             if($request->popup_value_type == "table") {
                 $field->popup_vals = "@" . $request->popup_vals_table;
@@ -214,14 +214,14 @@ class ModuleFields extends Model
             $field->popup_vals = "";
         }
         $field->save();
-        
+
         $field->module_obj = $module;
-        
+
         Schema::table($module->name_db, function ($table) use ($field, $isFieldTypeChange) {
             Module::create_field_schema($table, $field, true, $isFieldTypeChange);
         });
     }
-    
+
     /**
      * Get Array of Fields for given Module
      *
@@ -233,10 +233,10 @@ class ModuleFields extends Model
         $module = Module::where('name', $moduleName)->first();
         $fields = DB::table('module_fields')->where('module', $module->id)->get();
         $ftypes = ModuleFieldTypes::getFTypes();
-        
+
         $fields_popup = array();
         $fields_popup['id'] = null;
-        
+
         // Set field type (e.g. Dropdown/Taginput) in String Format to field Object
         foreach($fields as $f) {
             $f->field_type_str = array_search($f->field_type, $ftypes);
@@ -244,7 +244,7 @@ class ModuleFields extends Model
         }
         return $fields_popup;
     }
-    
+
     /**
      * Get Field Value when its associated with another Module / Table via "@"
      * e.g. "@employees"
@@ -277,7 +277,7 @@ class ModuleFields extends Model
             return $value_id;
         }
     }
-    
+
     /**
      * Exclude the Columns form given list ($listing_cols) if don't have field View Access
      * and return remaining Columns
@@ -298,5 +298,19 @@ class ModuleFields extends Model
             }
         }
         return $listing_cols_temp;
+    }
+
+
+    /**
+     * Returns the available filtering methods for module fields.
+     *
+     * @return array
+     */
+    public static function getFilterTypes()
+    {
+        return [
+            'dropdown' => 'Drop down',
+            'freetext' => 'Freetext',
+        ];
     }
 }

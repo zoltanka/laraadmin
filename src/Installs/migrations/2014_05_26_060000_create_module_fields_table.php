@@ -36,6 +36,7 @@ class CreateModuleFieldsTable extends Migration
             $table->text('popup_vals');
             $table->integer('sort')->unsigned()->default(0);
 			$table->boolean('listing_col')->default(true);
+            $table->string('filter', 30)->nullable();
             $table->timestamps();
         });
     }
